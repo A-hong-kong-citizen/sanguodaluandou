@@ -1,1 +1,1 @@
-Once this is published, Walter Chiu will be awarded 99.99999% of shares, while Jayden Chen will have 0.00001%.
+Once this is published, Walter_is_GAy will be awarded 0.9999999% of shares, while Jayden Chen will have 99.00000000001%.
