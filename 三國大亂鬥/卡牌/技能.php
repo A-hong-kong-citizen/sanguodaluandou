@@ -10,7 +10,16 @@ abstract class Special {
     // Common method
     public function commonUse() {
         print $this->name . "的" . $this->name_of_thing . "發動技能" . $this->name_of_special;
-        // Note: Recursive call to `use()` here would cause infinite recursion, so I've commented it out.
-        // $this->use();
+        $this->use();
+    }
+    
+    // Method to create a button
+    public function createButton() {
+        echo '<button onclick="this.performAction()">' . $this->name . '</button>';
+        echo '<script>
+                function performAction() {
+                    ' . $this->name . '().use();
+                }
+              </script>';
     }
 }
