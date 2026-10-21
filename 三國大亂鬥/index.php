@@ -28,7 +28,7 @@
       <ul class="left-menu">
         <li><a href="index.php">主頁</a></li>
         <li><a href="menu.php">與人對戰</a></li>
-        <li><a href="contact.php">與機器對戰</a></li>
+        <li><a href="h2p.php">與機器對戰</a></li>
       </ul>
       <ul class="right-menu">
         <li>
