@@ -1,4 +1,18 @@
 <?php
+use Sanguoga\Cards\CardEffect;
+use Sanguoga\Cards\GuoheChaiqiaoCard;
+use Sanguoga\Cards\LebusishuCard;
+use Sanguoga\Cards\ShaCard;
+use Sanguoga\Cards\ShanCard;
+use Sanguoga\Cards\ShunshouQianyangCard;
+use Sanguoga\Cards\TrickCardEffect;
+
+require_once __DIR__ . '/卡牌/普通/殺招式.php';
+require_once __DIR__ . '/卡牌/普通/閃.php';
+require_once __DIR__ . '/卡牌/錦囊/順手牽羊.php';
+require_once __DIR__ . '/卡牌/錦囊/過河拆橋.php';
+require_once __DIR__ . '/卡牌/錦囊/樂不思蜀.php';
+
 session_start();
 
 $suits = [
@@ -18,21 +32,29 @@ $ranks = [
 	['label' => 'K', 'value' => 13],
 ];
 
-function gameCardEffect(array $card): string
+function gameCardEffect(array $card): CardEffect
 {
-	$effect = $card['color'] === 'black' ? '閃' : '殺';
+	if ($card['value'] % 7 === 0) {
+		if ($card['value'] === 14) {
+			return new LebusishuCard();
+		}
 
-	if ($card['value'] % 3 === 0) {
-		$effect = '火殺';
+		return $card['color'] === 'red' ? new GuoheChaiqiaoCard() : new ShunshouQianyangCard();
 	}
 	if ($card['value'] % 4 === 0) {
-		$effect = '雷殺';
+		return new ShaCard('雷殺');
 	}
-	if ($card['value'] % 7 === 0) {
-		$effect = $card['color'] === 'red' ? '過河拆橋' : '順手牽羊';
+	if ($card['value'] % 3 === 0) {
+		return new ShaCard('火殺');
 	}
-	if ($card['value'] === 14) {
-		$effect = '樂不思蜀';
+
+	return $card['color'] === 'black' ? new ShanCard() : new ShaCard();
+}
+
+function requireTrickCardEffect(CardEffect $effect): TrickCardEffect
+{
+	if (!$effect instanceof TrickCardEffect) {
+		throw new LogicException('Expected a trick-card effect.');
 	}
 
 	return $effect;
@@ -130,10 +152,10 @@ function drawGameCards(array &$game, string $side, int $amount): int
 	return $drawn;
 }
 
-function findGameCardIndex(array $hand, string $effect): ?int
+function findGameCardIndex(array $hand, string $effectClass): ?int
 {
 	foreach ($hand as $index => $card) {
-		if (gameCardEffect($card) === $effect) {
+		if (gameCardEffect($card) instanceof $effectClass) {
 			return $index;
 		}
 	}
@@ -192,11 +214,10 @@ function runBotTurn(array &$game): void
 		return;
 	}
 
-	$specialEffects = ['順手牽羊', '過河拆橋', '樂不思蜀'];
 	while (true) {
 		$specialIndex = null;
 		foreach ($game['hands']['bot'] as $index => $card) {
-			if (in_array(gameCardEffect($card), $specialEffects, true)) {
+			if (gameCardEffect($card) instanceof TrickCardEffect) {
 				$specialIndex = $index;
 				break;
 			}
@@ -206,38 +227,20 @@ function runBotTurn(array &$game): void
 		}
 
 		$card = array_splice($game['hands']['bot'], $specialIndex, 1)[0];
-		$effect = gameCardEffect($card);
-		if ($effect === '樂不思蜀') {
-			$game['delayed']['player'][] = $card;
-			$game['bot_messages'][] = 'Bot 對你使用樂不思蜀，這張牌已放到你身上，並會在你下回合判定。';
-			addGameLog($game, 'Bot 對你使用樂不思蜀。');
-			continue;
+		$effect = requireTrickCardEffect(gameCardEffect($card));
+		$targetIndex = $effect->needsTarget() && $game['hands']['player']
+			? array_rand($game['hands']['player'])
+			: null;
+		$result = $effect->apply($game, $card, 'bot', $targetIndex);
+		if (isset($result['bot_message'])) {
+			$game['bot_messages'][] = $result['bot_message'];
 		}
-
-		if (!$game['hands']['player']) {
-			$game['discard'][] = $card;
-			$game['bot_messages'][] = 'Bot 使用' . $effect . '，但你沒有手牌可供選擇。';
-			addGameLog($game, 'Bot 使用' . $effect . '，但你沒有手牌可選。');
-			continue;
-		}
-
-		$targetIndex = array_rand($game['hands']['player']);
-		$target = array_splice($game['hands']['player'], $targetIndex, 1)[0];
-		if ($effect === '順手牽羊') {
-			$game['hands']['bot'][] = $target;
-			$game['bot_messages'][] = 'Bot 對你使用順手牽羊，你失去一張手牌，Bot 將這張牌收入手牌。';
-			addGameLog($game, 'Bot 使用順手牽羊並取得你的一張牌。');
-		} else {
-			$game['discard'][] = $target;
-			$game['bot_messages'][] = 'Bot 對你使用過河拆橋，你失去一張手牌，該牌已放入棄置牌堆。';
-			addGameLog($game, 'Bot 使用過河拆橋並棄置你的一張牌。');
-		}
-		$game['discard'][] = $card;
+		addGameLog($game, $result['log']);
 	}
 
 	$attackIndex = null;
 	foreach ($game['hands']['bot'] as $index => $card) {
-		if (in_array(gameCardEffect($card), ['殺', '火殺', '雷殺'], true)) {
+		if (gameCardEffect($card)->isAttack()) {
 			$attackIndex = $index;
 			break;
 		}
@@ -245,11 +248,19 @@ function runBotTurn(array &$game): void
 	if ($attackIndex !== null) {
 		$attack = array_splice($game['hands']['bot'], $attackIndex, 1)[0];
 		$effect = gameCardEffect($attack);
-		$damage = $effect === '火殺' ? 2 : ($effect === '雷殺' ? 3 : 1);
+		if (!$effect instanceof ShaCard) {
+			throw new LogicException('Attack cards must use ShaCard effects.');
+		}
 		$game['attack_used'] = true;
-		$game['response'] = ['card' => $attack, 'damage' => $damage, 'effect' => $effect];
+		$game['response'] = [
+			'card' => $attack,
+			'damage' => $effect->damage(),
+			'effect' => $effect->name(),
+			'required_dodges' => $effect->requiredDodges(),
+			'received_dodges' => 0,
+		];
 		$game['stage'] = 'response';
-		addGameLog($game, 'Bot 對你使用' . $effect . '，等待你的閃避。');
+		addGameLog($game, 'Bot 對你使用' . $effect->name() . '，需要 ' . $effect->requiredDodges() . ' 張閃。');
 		return;
 	}
 
@@ -303,38 +314,34 @@ function handleGameAction(array &$game, string $action, array $post): void
 				return;
 			}
 			$effect = gameCardEffect($card);
-			if ($effect === '閃' || (in_array($effect, ['殺', '火殺', '雷殺'], true) && $game['attack_used'])) {
+			if ($effect instanceof ShanCard || ($effect->isAttack() && $game['attack_used'])) {
 				return;
 			}
 			$card = removeGameCard($game, 'player', $card['id']);
-			if (in_array($effect, ['殺', '火殺', '雷殺'], true)) {
+			if ($effect->isAttack()) {
 				$game['attack_used'] = true;
 				$game['discard'][] = $card;
-				$flashIndex = findGameCardIndex($game['hands']['bot'], '閃');
+				$flashIndex = findGameCardIndex($game['hands']['bot'], ShanCard::class);
 				if ($flashIndex !== null) {
 					$flash = array_splice($game['hands']['bot'], $flashIndex, 1)[0];
 					$game['discard'][] = $flash;
-					addGameLog($game, '你使用' . $effect . '；Bot 打出閃避，攻擊無效。');
+					addGameLog($game, '你使用' . $effect->name() . '；Bot 打出閃避，攻擊無效。');
 				} else {
-				$damage = $effect === '火殺' ? 2 : ($effect === '雷殺' ? 3 : 1);
-				addGameLog($game, '你使用' . $effect . '。');
-				 damageGameSide($game, 'bot', $damage);
+				addGameLog($game, '你使用' . $effect->name() . '。');
+				damageGameSide($game, 'bot', $effect->damage());
 				}
 				return;
 			}
 
-			if ($effect === '樂不思蜀') {
-				$game['delayed']['bot'][] = $card;
-				addGameLog($game, '你對 Bot 使用樂不思蜀。');
-				return;
-			}
-			if (in_array($effect, ['順手牽羊', '過河拆橋'], true)) {
-				if (!$game['hands']['bot']) {
-					$game['discard'][] = $card;
-					addGameLog($game, '你使用' . $effect . '，但 Bot 沒有手牌可選。');
+			if ($effect instanceof TrickCardEffect) {
+				$trickEffect = requireTrickCardEffect($effect);
+				if (!$trickEffect->needsTarget() || !$game['hands']['bot']) {
+					$result = $trickEffect->apply($game, $card, 'player');
+					addGameLog($game, $result['log']);
 					return;
 				}
-				$game['pending_target'] = ['card' => $card, 'effect' => $effect];
+
+				$game['pending_target'] = ['card' => $card, 'effect' => $trickEffect::class];
 				$game['stage'] = 'choose_target';
 				return;
 			}
@@ -348,16 +355,11 @@ function handleGameAction(array &$game, string $action, array $post): void
 			if ($targetIndex === false || !isset($game['hands']['bot'][$targetIndex])) {
 				return;
 			}
-			$target = array_splice($game['hands']['bot'], $targetIndex, 1)[0];
 			$pending = $game['pending_target'];
-			$game['discard'][] = $pending['card'];
-			if ($pending['effect'] === '順手牽羊') {
-				$game['hands']['player'][] = $target;
-				addGameLog($game, '你使用順手牽羊，取得 Bot 的一張牌。');
-			} else {
-				$game['discard'][] = $target;
-				addGameLog($game, '你使用過河拆橋，棄置 Bot 的一張牌。');
-			}
+			$effectClass = $pending['effect'];
+			$effect = new $effectClass();
+			$result = $effect->apply($game, $pending['card'], 'player', $targetIndex);
+			addGameLog($game, $result['log']);
 			$game['pending_target'] = null;
 			$game['stage'] = 'play';
 			return;
@@ -403,7 +405,7 @@ function handleGameAction(array &$game, string $action, array $post): void
 			}
 			$flashIndex = null;
 			foreach ($game['hands']['player'] as $index => $card) {
-				if ($card['id'] === (string) ($post['card_id'] ?? '') && gameCardEffect($card) === '閃') {
+				if ($card['id'] === (string) ($post['card_id'] ?? '') && gameCardEffect($card) instanceof ShanCard) {
 					$flashIndex = $index;
 					break;
 				}
@@ -412,10 +414,19 @@ function handleGameAction(array &$game, string $action, array $post): void
 				return;
 			}
 			$flash = array_splice($game['hands']['player'], $flashIndex, 1)[0];
-			$game['discard'][] = $game['response']['card'];
 			$game['discard'][] = $flash;
+			$game['response']['received_dodges'] = ($game['response']['received_dodges'] ?? 0) + 1;
+			$requiredDodges = $game['response']['required_dodges'] ?? 1;
+			if ($game['response']['received_dodges'] < $requiredDodges) {
+				$remainingDodges = $requiredDodges - $game['response']['received_dodges'];
+				addGameLog($game, '你打出閃，還需要 ' . $remainingDodges . ' 張。');
+				return;
+			}
+
+			$game['discard'][] = $game['response']['card'];
+			$usedDodges = $game['response']['received_dodges'];
 			$game['response'] = null;
-			addGameLog($game, '你打出閃，Bot 的攻擊無效。');
+			addGameLog($game, '你打出 ' . $usedDodges . ' 張閃，Bot 的攻擊無效。');
 			finishBotTurn($game);
 			return;
 
@@ -436,9 +447,9 @@ function renderGameCard(array $card, string $token, string $action = '', string 
 {
 	$effect = gameCardEffect($card);
 	$classes = 'playing-card playing-card--' . $card['color'];
-	$label = $card['name'] . $card['label'] . '，' . $effect;
+	$label = $card['name'] . $card['label'] . '，' . $effect->name();
 	$body = '<span class="card-corner card-corner--top" aria-hidden="true"><span>' . gameEscape($card['label']) . '</span><span>' . gameEscape($card['symbol']) . '</span></span>'
-		. '<span class="card-effect">' . gameEscape($effect) . '</span>'
+		. '<span class="card-effect">' . gameEscape($effect->name()) . '</span>'
 		. '<span class="card-corner card-corner--bottom" aria-hidden="true"><span>' . gameEscape($card['label']) . '</span><span>' . gameEscape($card['symbol']) . '</span></span>';
 
 	if ($action === '') {
@@ -501,7 +512,7 @@ $instruction = match ($game['stage']) {
 	'play' => '可出任意張功能牌，並且每回合最多出 1 張殺。閃只能用來響應殺。',
 	'choose_target' => '選擇一張背面朝上的 Bot 手牌作為目標，或取消這次出牌。',
 	'discard' => '選擇手牌棄置，直到手牌數不高於你的生命值。',
-	'response' => 'Bot 使用' . ($game['response']['effect'] ?? '殺') . '，可打出閃避或承受 ' . ($game['response']['damage'] ?? 0) . ' 點傷害。',
+	'response' => 'Bot 使用' . ($game['response']['effect'] ?? '殺') . '；已出 ' . ($game['response']['received_dodges'] ?? 0) . ' / ' . ($game['response']['required_dodges'] ?? 1) . ' 張閃，可繼續閃避或承受 ' . ($game['response']['damage'] ?? 0) . ' 點傷害。',
 	'game_over' => $game['winner'] === 'player' ? '你贏了！' : '你輸了。',
 	default => '',
 };
@@ -542,13 +553,13 @@ $instruction = match ($game['stage']) {
 							$effect = gameCardEffect($card);
 						$cardAction = '';
 					$actionLabel = '';
-					if ($game['stage'] === 'play' && $effect !== '閃' && (!in_array($effect, ['殺', '火殺', '雷殺'], true) || !$game['attack_used'])) {
+					if ($game['stage'] === 'play' && !($effect instanceof ShanCard) && (!$effect->isAttack() || !$game['attack_used'])) {
 							$cardAction = 'play_card';
 							$actionLabel = '打出';
 						} elseif ($game['stage'] === 'discard') {
 							$cardAction = 'deposit_card';
 							$actionLabel = '棄置';
-						} elseif ($game['stage'] === 'response' && $effect === '閃') {
+						} elseif ($game['stage'] === 'response' && $effect instanceof ShanCard) {
 							$cardAction = 'respond_flash';
 							$actionLabel = '打出閃';
 						}
