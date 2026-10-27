@@ -15,10 +15,10 @@ final class LebusishuCard extends TrickCardEffect
 		return false;
 	}
 
-	public function apply(array &$game, array $card, string $user, ?int $targetIndex = null): array
+	public function apply(array &$game, string $user, ?int $targetIndex = null, ?string $targetSide = null): array
 	{
-		$targetSide = $user === 'player' ? 'bot' : 'player';
-		$game['delayed'][$targetSide][] = $card;
+		$targetSide ??= $user === 'player' ? 'bot' : 'player';
+		$game['delayed'][$targetSide][] = $this;
 
 		if ($user === 'bot') {
 			return [

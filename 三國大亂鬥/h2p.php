@@ -1,64 +1,22 @@
 <?php
-use Sanguoga\Cards\CardEffect;
 use Sanguoga\Cards\GuoheChaiqiaoCard;
 use Sanguoga\Cards\LebusishuCard;
+use Sanguoga\Cards\PlayingCard;
 use Sanguoga\Cards\ShaCard;
 use Sanguoga\Cards\ShanCard;
 use Sanguoga\Cards\ShunshouQianyangCard;
+use Sanguoga\Cards\TaoCard;
 use Sanguoga\Cards\TrickCardEffect;
 
 require_once __DIR__ . '/卡牌/普通/殺招式.php';
 require_once __DIR__ . '/卡牌/普通/閃.php';
+require_once __DIR__ . '/卡牌/普通/桃.php';
+require_once __DIR__ . '/卡牌/PlayingCard.php';
 require_once __DIR__ . '/卡牌/錦囊/順手牽羊.php';
 require_once __DIR__ . '/卡牌/錦囊/過河拆橋.php';
 require_once __DIR__ . '/卡牌/錦囊/樂不思蜀.php';
 
 session_start();
-
-$suits = [
-	['id' => 'spades', 'name' => '黑桃', 'symbol' => '♠', 'color' => 'black'],
-	['id' => 'clubs', 'name' => '梅花', 'symbol' => '♣', 'color' => 'black'],
-	['id' => 'hearts', 'name' => '紅心', 'symbol' => '♥', 'color' => 'red'],
-	['id' => 'diamonds', 'name' => '方塊', 'symbol' => '♦', 'color' => 'red'],
-];
-
-$ranks = [
-	['label' => 'A', 'value' => 14], ['label' => '2', 'value' => 2],
-	['label' => '3', 'value' => 3], ['label' => '4', 'value' => 4],
-	['label' => '5', 'value' => 5], ['label' => '6', 'value' => 6],
-	['label' => '7', 'value' => 7], ['label' => '8', 'value' => 8],
-	['label' => '9', 'value' => 9], ['label' => '10', 'value' => 10],
-	['label' => 'J', 'value' => 11], ['label' => 'Q', 'value' => 12],
-	['label' => 'K', 'value' => 13],
-];
-
-function gameCardEffect(array $card): CardEffect
-{
-	if ($card['value'] % 7 === 0) {
-		if ($card['value'] === 14) {
-			return new LebusishuCard();
-		}
-
-		return $card['color'] === 'red' ? new GuoheChaiqiaoCard() : new ShunshouQianyangCard();
-	}
-	if ($card['value'] % 4 === 0) {
-		return new ShaCard('雷殺');
-	}
-	if ($card['value'] % 3 === 0) {
-		return new ShaCard('火殺');
-	}
-
-	return $card['color'] === 'black' ? new ShanCard() : new ShaCard();
-}
-
-function requireTrickCardEffect(CardEffect $effect): TrickCardEffect
-{
-	if (!$effect instanceof TrickCardEffect) {
-		throw new LogicException('Expected a trick-card effect.');
-	}
-
-	return $effect;
-}
 
 function gameEscape(string $value): string
 {
@@ -71,21 +29,138 @@ function addGameLog(array &$game, string $message): void
 	$game['log'] = array_slice($game['log'], 0, 10);
 }
 
-function createGame(array $suits, array $ranks): array
+function createGame(): array
 {
-	$deck = [];
-	foreach ($suits as $suit) {
-		foreach ($ranks as $rank) {
-			$deck[] = array_merge($suit, $rank, ['id' => $suit['id'] . '-' . $rank['label']]);
+	$attributes = static fn (string $id, string $name, string $symbol, string $color, string $label, int $value): array => [
+			'id' => $id,
+			'name' => $name,
+			'symbol' => $symbol,
+			'color' => $color,
+			'label' => $label,
+			'value' => $value,
+		];
+	$cards = [
+			new LebusishuCard($attributes('spades-A-1', '黑桃', '♠', 'black', 'A', 14)),
+			new LebusishuCard($attributes('spades-A-2', '黑桃', '♠', 'black', 'A', 14)),
+			new ShanCard($attributes('spades-2-1', '黑桃', '♠', 'black', '2', 2)),
+			new ShanCard($attributes('spades-2-2', '黑桃', '♠', 'black', '2', 2)),
+			new ShaCard($attributes('spades-3-1', '黑桃', '♠', 'black', '3', 3), '火殺'),
+			new ShaCard($attributes('spades-3-2', '黑桃', '♠', 'black', '3', 3), '火殺'),
+			new ShaCard($attributes('spades-4-1', '黑桃', '♠', 'black', '4', 4), '雷殺'),
+			new ShaCard($attributes('spades-4-2', '黑桃', '♠', 'black', '4', 4), '雷殺'),
+			new ShanCard($attributes('spades-5-1', '黑桃', '♠', 'black', '5', 5)),
+			new ShanCard($attributes('spades-5-2', '黑桃', '♠', 'black', '5', 5)),
+			new ShaCard($attributes('spades-6-1', '黑桃', '♠', 'black', '6', 6), '火殺'),
+			new ShaCard($attributes('spades-6-2', '黑桃', '♠', 'black', '6', 6), '火殺'),
+			new ShunshouQianyangCard($attributes('spades-7-1', '黑桃', '♠', 'black', '7', 7)),
+			new ShunshouQianyangCard($attributes('spades-7-2', '黑桃', '♠', 'black', '7', 7)),
+			new ShaCard($attributes('spades-8-1', '黑桃', '♠', 'black', '8', 8), '雷殺'),
+			new ShaCard($attributes('spades-8-2', '黑桃', '♠', 'black', '8', 8), '雷殺'),
+			new ShaCard($attributes('spades-9-1', '黑桃', '♠', 'black', '9', 9), '火殺'),
+			new ShaCard($attributes('spades-9-2', '黑桃', '♠', 'black', '9', 9), '火殺'),
+			new ShanCard($attributes('spades-10-1', '黑桃', '♠', 'black', '10', 10)),
+			new ShanCard($attributes('spades-10-2', '黑桃', '♠', 'black', '10', 10)),
+			new ShanCard($attributes('spades-J-1', '黑桃', '♠', 'black', 'J', 11)),
+			new ShanCard($attributes('spades-J-2', '黑桃', '♠', 'black', 'J', 11)),
+			new ShaCard($attributes('spades-Q-1', '黑桃', '♠', 'black', 'Q', 12), '雷殺'),
+			new ShaCard($attributes('spades-Q-2', '黑桃', '♠', 'black', 'Q', 12), '雷殺'),
+			new ShanCard($attributes('spades-K-1', '黑桃', '♠', 'black', 'K', 13)),
+			new ShanCard($attributes('spades-K-2', '黑桃', '♠', 'black', 'K', 13)),
+			new LebusishuCard($attributes('clubs-A-1', '梅花', '♣', 'black', 'A', 14)),
+			new LebusishuCard($attributes('clubs-A-2', '梅花', '♣', 'black', 'A', 14)),
+			new ShanCard($attributes('clubs-2-1', '梅花', '♣', 'black', '2', 2)),
+			new ShanCard($attributes('clubs-2-2', '梅花', '♣', 'black', '2', 2)),
+			new ShaCard($attributes('clubs-3-1', '梅花', '♣', 'black', '3', 3), '火殺'),
+			new ShaCard($attributes('clubs-3-2', '梅花', '♣', 'black', '3', 3), '火殺'),
+			new ShaCard($attributes('clubs-4-1', '梅花', '♣', 'black', '4', 4), '雷殺'),
+			new ShaCard($attributes('clubs-4-2', '梅花', '♣', 'black', '4', 4), '雷殺'),
+			new ShanCard($attributes('clubs-5-1', '梅花', '♣', 'black', '5', 5)),
+			new ShanCard($attributes('clubs-5-2', '梅花', '♣', 'black', '5', 5)),
+			new ShaCard($attributes('clubs-6-1', '梅花', '♣', 'black', '6', 6), '火殺'),
+			new ShaCard($attributes('clubs-6-2', '梅花', '♣', 'black', '6', 6), '火殺'),
+			new ShunshouQianyangCard($attributes('clubs-7-1', '梅花', '♣', 'black', '7', 7)),
+			new ShunshouQianyangCard($attributes('clubs-7-2', '梅花', '♣', 'black', '7', 7)),
+			new ShaCard($attributes('clubs-8-1', '梅花', '♣', 'black', '8', 8), '雷殺'),
+			new ShaCard($attributes('clubs-8-2', '梅花', '♣', 'black', '8', 8), '雷殺'),
+			new ShaCard($attributes('clubs-9-1', '梅花', '♣', 'black', '9', 9), '火殺'),
+			new ShaCard($attributes('clubs-9-2', '梅花', '♣', 'black', '9', 9), '火殺'),
+			new ShanCard($attributes('clubs-10-1', '梅花', '♣', 'black', '10', 10)),
+			new ShanCard($attributes('clubs-10-2', '梅花', '♣', 'black', '10', 10)),
+			new ShanCard($attributes('clubs-J-1', '梅花', '♣', 'black', 'J', 11)),
+			new ShanCard($attributes('clubs-J-2', '梅花', '♣', 'black', 'J', 11)),
+			new ShaCard($attributes('clubs-Q-1', '梅花', '♣', 'black', 'Q', 12), '雷殺'),
+			new ShaCard($attributes('clubs-Q-2', '梅花', '♣', 'black', 'Q', 12), '雷殺'),
+			new ShanCard($attributes('clubs-K-1', '梅花', '♣', 'black', 'K', 13)),
+			new ShanCard($attributes('clubs-K-2', '梅花', '♣', 'black', 'K', 13)),
+			new LebusishuCard($attributes('hearts-A-1', '紅心', '♥', 'red', 'A', 14)),
+			new LebusishuCard($attributes('hearts-A-2', '紅心', '♥', 'red', 'A', 14)),
+			new TaoCard($attributes('hearts-2-1', '紅心', '♥', 'red', '2', 2)),
+			new TaoCard($attributes('hearts-2-2', '紅心', '♥', 'red', '2', 2)),
+			new ShaCard($attributes('hearts-3-1', '紅心', '♥', 'red', '3', 3), '火殺'),
+			new ShaCard($attributes('hearts-3-2', '紅心', '♥', 'red', '3', 3), '火殺'),
+			new ShaCard($attributes('hearts-4-1', '紅心', '♥', 'red', '4', 4), '雷殺'),
+			new ShaCard($attributes('hearts-4-2', '紅心', '♥', 'red', '4', 4), '雷殺'),
+			new ShaCard($attributes('hearts-5-1', '紅心', '♥', 'red', '5', 5)),
+			new ShaCard($attributes('hearts-5-2', '紅心', '♥', 'red', '5', 5)),
+			new ShaCard($attributes('hearts-6-1', '紅心', '♥', 'red', '6', 6), '火殺'),
+			new ShaCard($attributes('hearts-6-2', '紅心', '♥', 'red', '6', 6), '火殺'),
+			new GuoheChaiqiaoCard($attributes('hearts-7-1', '紅心', '♥', 'red', '7', 7)),
+			new GuoheChaiqiaoCard($attributes('hearts-7-2', '紅心', '♥', 'red', '7', 7)),
+			new ShaCard($attributes('hearts-8-1', '紅心', '♥', 'red', '8', 8), '雷殺'),
+			new ShaCard($attributes('hearts-8-2', '紅心', '♥', 'red', '8', 8), '雷殺'),
+			new ShaCard($attributes('hearts-9-1', '紅心', '♥', 'red', '9', 9), '火殺'),
+			new ShaCard($attributes('hearts-9-2', '紅心', '♥', 'red', '9', 9), '火殺'),
+			new ShaCard($attributes('hearts-10-1', '紅心', '♥', 'red', '10', 10)),
+			new ShaCard($attributes('hearts-10-2', '紅心', '♥', 'red', '10', 10)),
+			new ShaCard($attributes('hearts-J-1', '紅心', '♥', 'red', 'J', 11)),
+			new ShaCard($attributes('hearts-J-2', '紅心', '♥', 'red', 'J', 11)),
+			new ShaCard($attributes('hearts-Q-1', '紅心', '♥', 'red', 'Q', 12), '雷殺'),
+			new ShaCard($attributes('hearts-Q-2', '紅心', '♥', 'red', 'Q', 12), '雷殺'),
+			new ShaCard($attributes('hearts-K-1', '紅心', '♥', 'red', 'K', 13)),
+			new ShaCard($attributes('hearts-K-2', '紅心', '♥', 'red', 'K', 13)),
+			new LebusishuCard($attributes('diamonds-A-1', '方塊', '♦', 'red', 'A', 14)),
+			new LebusishuCard($attributes('diamonds-A-2', '方塊', '♦', 'red', 'A', 14)),
+			new ShaCard($attributes('diamonds-2-1', '方塊', '♦', 'red', '2', 2)),
+			new ShaCard($attributes('diamonds-2-2', '方塊', '♦', 'red', '2', 2)),
+			new ShaCard($attributes('diamonds-3-1', '方塊', '♦', 'red', '3', 3), '火殺'),
+			new ShaCard($attributes('diamonds-3-2', '方塊', '♦', 'red', '3', 3), '火殺'),
+			new ShaCard($attributes('diamonds-4-1', '方塊', '♦', 'red', '4', 4), '雷殺'),
+			new ShaCard($attributes('diamonds-4-2', '方塊', '♦', 'red', '4', 4), '雷殺'),
+			new ShaCard($attributes('diamonds-5-1', '方塊', '♦', 'red', '5', 5)),
+			new ShaCard($attributes('diamonds-5-2', '方塊', '♦', 'red', '5', 5)),
+			new ShaCard($attributes('diamonds-6-1', '方塊', '♦', 'red', '6', 6), '火殺'),
+			new ShaCard($attributes('diamonds-6-2', '方塊', '♦', 'red', '6', 6), '火殺'),
+			new GuoheChaiqiaoCard($attributes('diamonds-7-1', '方塊', '♦', 'red', '7', 7)),
+			new GuoheChaiqiaoCard($attributes('diamonds-7-2', '方塊', '♦', 'red', '7', 7)),
+			new ShaCard($attributes('diamonds-8-1', '方塊', '♦', 'red', '8', 8), '雷殺'),
+			new ShaCard($attributes('diamonds-8-2', '方塊', '♦', 'red', '8', 8), '雷殺'),
+			new ShaCard($attributes('diamonds-9-1', '方塊', '♦', 'red', '9', 9), '火殺'),
+			new ShaCard($attributes('diamonds-9-2', '方塊', '♦', 'red', '9', 9), '火殺'),
+			new ShaCard($attributes('diamonds-10-1', '方塊', '♦', 'red', '10', 10)),
+			new ShaCard($attributes('diamonds-10-2', '方塊', '♦', 'red', '10', 10)),
+			new ShaCard($attributes('diamonds-J-1', '方塊', '♦', 'red', 'J', 11)),
+			new ShaCard($attributes('diamonds-J-2', '方塊', '♦', 'red', 'J', 11)),
+			new ShaCard($attributes('diamonds-Q-1', '方塊', '♦', 'red', 'Q', 12), '雷殺'),
+			new ShaCard($attributes('diamonds-Q-2', '方塊', '♦', 'red', 'Q', 12), '雷殺'),
+			new ShaCard($attributes('diamonds-K-1', '方塊', '♦', 'red', 'K', 13)),
+			new ShaCard($attributes('diamonds-K-2', '方塊', '♦', 'red', 'K', 13)),
+	];
+	shuffle($cards);
+	$deck = new \SplQueue();
+	foreach ($cards as $card) {
+		$deck->enqueue($card);
+	}
+
+	$hands = ['player' => [], 'bot' => []];
+	foreach (['player', 'bot'] as $side) {
+		for ($drawn = 0; $drawn < 4; $drawn++) {
+			$hands[$side][] = $deck->dequeue();
 		}
 	}
-	shuffle($deck);
 
 	$game = [
-		'hands' => [
-			'player' => array_splice($deck, 0, 4),
-			'bot' => array_splice($deck, 0, 4),
-		],
+		'card_model_version' => 2,
+		'hands' => $hands,
 		'deck' => $deck,
 		'discard' => [],
 		'check_deck' => [],
@@ -124,11 +199,11 @@ function startGameTurn(array &$game, string $side): void
 
 	foreach ($pending as $indulgence) {
 		$game['discard'][] = $indulgence;
-		$revealed = array_pop($game['deck']);
-		if (!$revealed) {
+		if ($game['deck']->isEmpty()) {
 			addGameLog($game, $sideName . '的樂不思蜀沒有牌可翻，判定結束。');
 			continue;
 		}
+		$revealed = $game['deck']->dequeue();
 
 		$game['check_deck'][] = $revealed;
 		if ($revealed['symbol'] === '♥') {
@@ -143,8 +218,8 @@ function startGameTurn(array &$game, string $side): void
 function drawGameCards(array &$game, string $side, int $amount): int
 {
 	$drawn = 0;
-	while ($drawn < $amount && $game['deck']) {
-		$game['hands'][$side][] = array_pop($game['deck']);
+	while ($drawn < $amount && !$game['deck']->isEmpty()) {
+		$game['hands'][$side][] = $game['deck']->dequeue();
 		$drawn++;
 	}
 	addGameLog($game, ($side === 'player' ? '你' : 'Bot') . '從牌堆抽取 ' . $drawn . ' 張牌。');
@@ -155,7 +230,7 @@ function drawGameCards(array &$game, string $side, int $amount): int
 function findGameCardIndex(array $hand, string $effectClass): ?int
 {
 	foreach ($hand as $index => $card) {
-		if (gameCardEffect($card) instanceof $effectClass) {
+		if ($card instanceof $effectClass) {
 			return $index;
 		}
 	}
@@ -163,7 +238,7 @@ function findGameCardIndex(array $hand, string $effectClass): ?int
 	return null;
 }
 
-function removeGameCard(array &$game, string $side, string $cardId): ?array
+function removeGameCard(array &$game, string $side, string $cardId): ?PlayingCard
 {
 	foreach ($game['hands'][$side] as $index => $card) {
 		if ($card['id'] === $cardId) {
@@ -213,11 +288,21 @@ function runBotTurn(array &$game): void
 		finishBotTurn($game, true);
 		return;
 	}
+	while ($game['health']['bot'] < 5) {
+		$peachIndex = findGameCardIndex($game['hands']['bot'], TaoCard::class);
+		if ($peachIndex === null) {
+			break;
+		}
+		$peach = array_splice($game['hands']['bot'], $peachIndex, 1)[0];
+		$game['discard'][] = $peach;
+		$game['health']['bot']++;
+		addGameLog($game, 'Bot 使用桃，回覆 1 點生命。');
+	}
 
 	while (true) {
 		$specialIndex = null;
 		foreach ($game['hands']['bot'] as $index => $card) {
-			if (gameCardEffect($card) instanceof TrickCardEffect) {
+			if ($card instanceof TrickCardEffect) {
 				$specialIndex = $index;
 				break;
 			}
@@ -227,11 +312,11 @@ function runBotTurn(array &$game): void
 		}
 
 		$card = array_splice($game['hands']['bot'], $specialIndex, 1)[0];
-		$effect = requireTrickCardEffect(gameCardEffect($card));
+		$effect = $card;
 		$targetIndex = $effect->needsTarget() && $game['hands']['player']
 			? array_rand($game['hands']['player'])
 			: null;
-		$result = $effect->apply($game, $card, 'bot', $targetIndex);
+		$result = $effect->apply($game, 'bot', $targetIndex);
 		if (isset($result['bot_message'])) {
 			$game['bot_messages'][] = $result['bot_message'];
 		}
@@ -240,14 +325,14 @@ function runBotTurn(array &$game): void
 
 	$attackIndex = null;
 	foreach ($game['hands']['bot'] as $index => $card) {
-		if (gameCardEffect($card)->isAttack()) {
+		if ($card->isAttack()) {
 			$attackIndex = $index;
 			break;
 		}
 	}
 	if ($attackIndex !== null) {
 		$attack = array_splice($game['hands']['bot'], $attackIndex, 1)[0];
-		$effect = gameCardEffect($attack);
+		$effect = $attack;
 		if (!$effect instanceof ShaCard) {
 			throw new LogicException('Attack cards must use ShaCard effects.');
 		}
@@ -277,8 +362,7 @@ function finishPlayerTurn(array &$game): void
 function handleGameAction(array &$game, string $action, array $post): void
 {
 	if ($action === 'new_game') {
-		global $suits, $ranks;
-		$game = createGame($suits, $ranks);
+		$game = createGame();
 		return;
 	}
 	if ($game['stage'] === 'game_over') {
@@ -313,11 +397,17 @@ function handleGameAction(array &$game, string $action, array $post): void
 			if (!$card) {
 				return;
 			}
-			$effect = gameCardEffect($card);
+			$effect = $card;
 			if ($effect instanceof ShanCard || ($effect->isAttack() && $game['attack_used'])) {
 				return;
 			}
+			if ($effect instanceof TaoCard && $game['health']['player'] >= 5) {
+				return;
+			}
 			$card = removeGameCard($game, 'player', $card['id']);
+			if (!$card instanceof PlayingCard) {
+				return;
+			}
 			if ($effect->isAttack()) {
 				$game['attack_used'] = true;
 				$game['discard'][] = $card;
@@ -332,16 +422,22 @@ function handleGameAction(array &$game, string $action, array $post): void
 				}
 				return;
 			}
+			if ($effect instanceof TaoCard) {
+				$game['health']['player'] = min(5, $game['health']['player'] + 1);
+				$game['discard'][] = $card;
+				addGameLog($game, '你使用桃，回覆 1 點生命。');
+				return;
+			}
 
 			if ($effect instanceof TrickCardEffect) {
-				$trickEffect = requireTrickCardEffect($effect);
+				$trickEffect = $effect;
 				if (!$trickEffect->needsTarget() || !$game['hands']['bot']) {
-					$result = $trickEffect->apply($game, $card, 'player');
+					$result = $trickEffect->apply($game, 'player');
 					addGameLog($game, $result['log']);
 					return;
 				}
 
-				$game['pending_target'] = ['card' => $card, 'effect' => $trickEffect::class];
+				$game['pending_target'] = ['card' => $card];
 				$game['stage'] = 'choose_target';
 				return;
 			}
@@ -356,9 +452,7 @@ function handleGameAction(array &$game, string $action, array $post): void
 				return;
 			}
 			$pending = $game['pending_target'];
-			$effectClass = $pending['effect'];
-			$effect = new $effectClass();
-			$result = $effect->apply($game, $pending['card'], 'player', $targetIndex);
+			$result = $pending['card']->apply($game, 'player', $targetIndex);
 			addGameLog($game, $result['log']);
 			$game['pending_target'] = null;
 			$game['stage'] = 'play';
@@ -405,7 +499,7 @@ function handleGameAction(array &$game, string $action, array $post): void
 			}
 			$flashIndex = null;
 			foreach ($game['hands']['player'] as $index => $card) {
-				if ($card['id'] === (string) ($post['card_id'] ?? '') && gameCardEffect($card) instanceof ShanCard) {
+				if ($card['id'] === (string) ($post['card_id'] ?? '') && $card instanceof ShanCard) {
 					$flashIndex = $index;
 					break;
 				}
@@ -443,9 +537,9 @@ function handleGameAction(array &$game, string $action, array $post): void
 	}
 }
 
-function renderGameCard(array $card, string $token, string $action = '', string $actionLabel = '', string $fieldName = 'card_id'): string
+function renderGameCard(PlayingCard $card, string $token, string $action = '', string $actionLabel = '', string $fieldName = 'card_id'): string
 {
-	$effect = gameCardEffect($card);
+	$effect = $card;
 	$classes = 'playing-card playing-card--' . $card['color'];
 	$label = $card['name'] . $card['label'] . '，' . $effect->name();
 	$body = '<span class="card-corner card-corner--top" aria-hidden="true"><span>' . gameEscape($card['label']) . '</span><span>' . gameEscape($card['symbol']) . '</span></span>'
@@ -479,9 +573,16 @@ function renderCardBack(string $token, ?int $targetIndex = null, string $ariaLab
 		. '<span class="card-action-label">選擇</span></form>';
 }
 
+if (defined('SANGUOGA_MOREBOT_BOOTSTRAP')) {
+	return;
+}
+
 $_SESSION['game_token'] ??= bin2hex(random_bytes(24));
-if (!isset($_SESSION['game'])) {
-	$_SESSION['game'] = createGame($suits, $ranks);
+if (!isset($_SESSION['game'])
+	|| ($_SESSION['game']['card_model_version'] ?? null) !== 2
+	|| !($_SESSION['game']['deck'] instanceof \SplQueue)
+) {
+	$_SESSION['game'] = createGame();
 }
 $_SESSION['game']['bot_messages'] ??= [];
 $_SESSION['game']['check_deck'] ??= [];
@@ -531,6 +632,7 @@ $instruction = match ($game['stage']) {
 			<li><a href="index.php">主頁</a></li>
 			<li><a href="h2h.php">與人對戰</a></li>
 			<li><a href="h2p.php" aria-current="page">與機器對戰</a></li>
+			<li><a href="morebot.php">你 vs 3 Bot</a></li>
 		</ul>
 	</nav>
 
@@ -550,10 +652,10 @@ $instruction = match ($game['stage']) {
 					<div class="card-grid" aria-label="你的手牌">
 						<?php foreach ($game['hands']['player'] as $card): ?>
 							<?php
-							$effect = gameCardEffect($card);
+							$effect = $card;
 						$cardAction = '';
 					$actionLabel = '';
-					if ($game['stage'] === 'play' && !($effect instanceof ShanCard) && (!$effect->isAttack() || !$game['attack_used'])) {
+					if ($game['stage'] === 'play' && !($effect instanceof ShanCard) && (!$effect->isAttack() || !$game['attack_used']) && (!($effect instanceof TaoCard) || $game['health']['player'] < 5)) {
 							$cardAction = 'play_card';
 							$actionLabel = '打出';
 						} elseif ($game['stage'] === 'discard') {
@@ -581,7 +683,7 @@ $instruction = match ($game['stage']) {
 				<div class="piles">
 					<div class="pile">
 						<h2>抽牌堆</h2>
-						<?php if ($game['deck']): ?>
+						<?php if (!$game['deck']->isEmpty()): ?>
 							<?= renderCardBack($token, null, '抽牌堆，牌面朝下') ?>
 						<?php else: ?>
 							<div class="empty-pile">牌堆已空</div>

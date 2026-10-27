@@ -10,11 +10,11 @@ final class GuoheChaiqiaoCard extends TrickCardEffect
 		return '過河拆橋';
 	}
 
-	public function apply(array &$game, array $card, string $user, ?int $targetIndex = null): array
+	public function apply(array &$game, string $user, ?int $targetIndex = null, ?string $targetSide = null): array
 	{
-		$targetSide = $user === 'player' ? 'bot' : 'player';
+		$targetSide ??= $user === 'player' ? 'bot' : 'player';
 		if ($targetIndex === null || !isset($game['hands'][$targetSide][$targetIndex])) {
-			$game['discard'][] = $card;
+			$game['discard'][] = $this;
 			if ($user === 'bot') {
 				return [
 					'log' => 'Bot 使用過河拆橋，但你沒有手牌可選。',
@@ -26,7 +26,7 @@ final class GuoheChaiqiaoCard extends TrickCardEffect
 		}
 
 		$target = array_splice($game['hands'][$targetSide], $targetIndex, 1)[0];
-		$game['discard'][] = $card;
+		$game['discard'][] = $this;
 		$game['discard'][] = $target;
 
 		if ($user === 'bot') {

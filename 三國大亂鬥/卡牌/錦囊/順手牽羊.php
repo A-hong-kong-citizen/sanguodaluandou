@@ -10,11 +10,11 @@ final class ShunshouQianyangCard extends TrickCardEffect
 		return '順手牽羊';
 	}
 
-	public function apply(array &$game, array $card, string $user, ?int $targetIndex = null): array
+	public function apply(array &$game, string $user, ?int $targetIndex = null, ?string $targetSide = null): array
 	{
-		$targetSide = $user === 'player' ? 'bot' : 'player';
+		$targetSide ??= $user === 'player' ? 'bot' : 'player';
 		if ($targetIndex === null || !isset($game['hands'][$targetSide][$targetIndex])) {
-			$game['discard'][] = $card;
+			$game['discard'][] = $this;
 			if ($user === 'bot') {
 				return [
 					'log' => 'Bot 使用順手牽羊，但你沒有手牌可選。',
@@ -27,7 +27,7 @@ final class ShunshouQianyangCard extends TrickCardEffect
 
 		$target = array_splice($game['hands'][$targetSide], $targetIndex, 1)[0];
 		$game['hands'][$user][] = $target;
-		$game['discard'][] = $card;
+		$game['discard'][] = $this;
 
 		if ($user === 'bot') {
 			return [

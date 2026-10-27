@@ -1,19 +1,23 @@
 <?php
 namespace Sanguoga\Cards;
 
-require_once __DIR__ . '/abstract.php';
+require_once __DIR__ . '/../abstract.php';
+require_once __DIR__ . '/../PlayingCard.php';
 
-final class ShaCard extends CardEffect
+final class ShaCard extends CardEffect implements PlayingCard
 {
+	use HasCardAttributes;
+
 	private string $effectName;
 	private int $requiredDodges;
 
-	public function __construct(string $effectName = '殺', int $requiredDodges = 1)
+	public function __construct(array $attributes, string $effectName = '殺', int $requiredDodges = 1)
 	{
 		if ($requiredDodges < 1) {
 			throw new \InvalidArgumentException('A Sha attack must require at least one dodge.');
 		}
 
+		$this->initializeCardAttributes($attributes);
 		$this->effectName = $effectName;
 		$this->requiredDodges = $requiredDodges;
 	}

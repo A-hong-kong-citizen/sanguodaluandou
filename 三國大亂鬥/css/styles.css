@@ -668,3 +668,136 @@ button.playing-card {
     padding: 12px;
   }
 }
+
+.multi-seat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.multi-seat {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: #174b39;
+  color: #fbf8ee;
+}
+
+.multi-seat .hand-panel-heading {
+  margin-bottom: 10px;
+}
+
+.multi-seat .hand-panel-heading h2 {
+  color: #fbf8ee;
+}
+
+.multi-seat .game-eyebrow,
+.multi-seat .health-count {
+  color: #a9c2b4;
+}
+
+.multi-player-hand,
+.multi-card-backs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: 8px;
+  min-height: 104px;
+}
+
+.multi-seat-meta {
+  margin: 10px 0 0;
+  color: #a9c2b4;
+  font-size: 12px;
+}
+
+.multi-card-form {
+  align-items: stretch;
+}
+
+.multi-target-label {
+  display: grid;
+  gap: 3px;
+  color: #d5e1da;
+  font-size: 11px;
+}
+
+.multi-target-label select {
+  max-width: 76px;
+  padding: 3px 4px;
+  border: 1px solid #b7c1b8;
+  border-radius: 4px;
+  background: #fff;
+  color: #18251f;
+  font: inherit;
+  font-size: 11px;
+}
+
+.multi-table-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.multi-pile-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+  border-radius: 6px;
+  background: #174b39;
+  color: #fbf8ee;
+}
+
+.multi-pile-row .pile {
+  min-width: 0;
+}
+
+.multi-pile-row .pile h2 {
+  margin-bottom: 10px;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 18px;
+}
+
+.multi-stage-panel {
+  padding: 18px;
+  border: 1px solid #d7d2c4;
+  border-radius: 6px;
+  background: #fbf8ee;
+}
+
+.multi-stage-panel h2 {
+  margin-bottom: 8px;
+  color: #173d31;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 22px;
+}
+
+.multi-stage-panel p:not(.game-eyebrow) {
+  color: #56655b;
+  line-height: 1.5;
+}
+
+@media (max-width: 1050px) {
+  .multi-seat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .multi-seat-grid,
+  .multi-table-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .multi-table-layout {
+    gap: 10px;
+  }
+
+  .multi-pile-row {
+    padding: 12px;
+  }
+}

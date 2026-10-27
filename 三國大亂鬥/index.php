@@ -27,8 +27,9 @@
       <!-- <img src="./images/logo.png" alt="School Logo" class="logo"> -->
       <ul class="left-menu">
         <li><a href="index.php">主頁</a></li>
-        <li><a href="menu.php">與人對戰</a></li>
+        <li><a href="h2h.php">與人對戰</a></li>
         <li><a href="h2p.php">與機器對戰</a></li>
+        <li><a href="morebot.php">與多個機器對戰</a></li>
       </ul>
       <ul class="right-menu">
         <li>
